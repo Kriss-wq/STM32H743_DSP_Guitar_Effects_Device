@@ -33,6 +33,7 @@
 /* USER CODE END 1 */
 
 /** Configure pins
+     PA15 (JTDI)   ------> DEBUG_JTDI
      PA14 (JTCK/SWCLK)   ------> DEBUG_JTCK-SWCLK
      PC15-OSC32_OUT (OSC32_OUT)   ------> RCC_OSC32_OUT
      PC14-OSC32_IN (OSC32_IN)   ------> RCC_OSC32_IN

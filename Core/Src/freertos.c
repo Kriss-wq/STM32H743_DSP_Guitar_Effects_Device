@@ -29,11 +29,9 @@
 #include <stdio.h>
 
 #include "lvgl.h"
-
 #include <string.h>
 #include <sys/types.h>
 
-#include "adc.h"
 #include "i2s.h"
 #include "touch_800x480.h"
 #include "porting/lv_port_disp.h"
@@ -47,6 +45,7 @@
 #include "arm_math.h"
 #include "usbd_core.h"
 #include "main.h"
+#include "semphr.h"
 #include "usbd_audio_if.h"
 #include "usb_device.h"
 /* USER CODE END Includes */
@@ -137,15 +136,17 @@ void vApplicationIdleHook( void )
 #define LOG_BUFFER_SIZE 256
 #define Audio_Buffer_Size 64
 
-static uint32_t tick;
+volatile static uint32_t tick;
 __attribute__((section(".ram"))) float x = 0;
 __attribute__((section(".ram"))) float z = 0;
 __attribute__((section(".ram"))) int32_t y = 0;
 __attribute__((section(".ram"))) uint8_t USBaudio_buffer[USB_AUDIO_BUFFER_SIZE];
-__attribute__((section(".ram"))) int32_t audio_buffer[Audio_Buffer_Size];
+__attribute__((section(".ram"))) int32_t txaudio_buffer[Audio_Buffer_Size];
+__attribute__((section(".ram"))) int32_t rxaudio_buffer[Audio_Buffer_Size];
 __attribute__((section(".ram"))) uint8_t log_buffer[LOG_BUFFER_SIZE];
-extern volatile uint32_t write_error_count;
-volatile uint32_t error_count = 0;
+
+volatile SemaphoreHandle_t xRxI2SSemaphore;
+volatile uint8_t I2S_RX_State;
 void vApplicationTickHook(void)
 {
     /* This function will be called by each tick interrupt if
@@ -175,6 +176,8 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
     /* add semaphores, ... */
+
+  xRxI2SSemaphore = xSemaphoreCreateBinary();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -229,8 +232,13 @@ void DisplayTaskEntry(void *argument)
     {
         lv_task_handler();
         Touch_Scan();
-        ui_center_labels_set_text_fmt(1,"rerror:%ld",error_count);
-        ui_center_labels_set_text_fmt(2,"werror:%ld",write_error_count);
+        ui_center_labels_set_text_fmt(0,"rerror:%ld",Get_read_error_count());
+        ui_center_labels_set_text_fmt(1,"werror:%ld",Get_write_error_count());
+        ui_center_labels_set_text_fmt(2,"tick:%ld",rxaudio_buffer[0]);
+        {
+          extern volatile uint32_t audio_fb_hz_dbg;
+          ui_center_labels_set_text_fmt(3,"hz:%lu",(unsigned long)audio_fb_hz_dbg);
+        }
         TickType_t xLastWakeTime = xTaskGetTickCount();
         vTaskDelayUntil(&xLastWakeTime, 13);
     }
@@ -252,7 +260,8 @@ void DatacollecTaskEntry(void *argument)
     TIM3_CaptureResult_t tim3_result;
 
     osDelay(1000);
-    HAL_I2S_Transmit_DMA(&hi2s2,audio_buffer,Audio_Buffer_Size);
+    HAL_I2S_Transmit_DMA(&hi2s2,txaudio_buffer,Audio_Buffer_Size);
+    //HAL_I2S_Receive_DMA(&hi2s3,rxaudio_buffer,Audio_Buffer_Size);
     for (;;)
     {
       //AUDIO_Buffer_Read(USBaudio_buffer,USB_AUDIO_BUFFER_SIZE);
@@ -261,6 +270,15 @@ void DatacollecTaskEntry(void *argument)
       // TickType_t xLastWakeTime = xTaskGetTickCount();
       // vTaskDelayUntil(&xLastWakeTime, 1);
       ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+      if (I2S_RX_State == 1)
+      {
+        memcpy(txaudio_buffer,rxaudio_buffer,sizeof(int32_t)*Audio_Buffer_Size/2);
+      }
+      else if (I2S_RX_State == 2)
+      {
+        memcpy(txaudio_buffer + Audio_Buffer_Size / 2,rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(int32_t)*Audio_Buffer_Size/2);
+
+      }
     }
   /* USER CODE END DatacollecTaskEntry */
 }
@@ -274,8 +292,8 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
   {
     for (uint8_t i = 0; i < Audio_Buffer_Size / 2; i++)
     {
-      audio_buffer[i] =0;
-      error_count++;
+      txaudio_buffer[i] =0;
+      //read_error_count++;
     }
   }
   else
@@ -286,11 +304,11 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
       L = USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8);
       R = USBaudio_buffer[4 * i + 2] | (USBaudio_buffer[4 * i + 3] << 8);
 
-      audio_buffer[2 * i] = (int32_t)(int16_t)L << 8;
-      audio_buffer[2 * i + 1] = (int32_t)(int16_t)R << 8;
+      txaudio_buffer[2 * i] = (int32_t)(int16_t)L << 8;
+      txaudio_buffer[2 * i + 1] = (int32_t)(int16_t)R << 8;
     }
   }
-  SCB_CleanDCache_by_Addr(audio_buffer,sizeof(audio_buffer)/2);
+  SCB_CleanDCache_by_Addr(txaudio_buffer,sizeof(txaudio_buffer)/2);
 }
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
@@ -299,9 +317,9 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
   {
     for (uint8_t i = Audio_Buffer_Size/2; i < Audio_Buffer_Size; i++)
     {
-      audio_buffer[i] = 0;
-      error_count++;
+      txaudio_buffer[i] = 0;
     }
+    Plus_read_error_count();
   }
   else
   {
@@ -309,12 +327,32 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
     {
       uint16_t L = USBaudio_buffer[4*i] | (USBaudio_buffer[4*i+1] << 8);
       uint16_t R = USBaudio_buffer[4*i+2] | (USBaudio_buffer[4*i+3] << 8);
-      audio_buffer[Audio_Buffer_Size/2 + 2*i]     = (int32_t)(int16_t)L << 8;
-      audio_buffer[Audio_Buffer_Size/2 + 2*i + 1] = (int32_t)(int16_t)R << 8;
+      txaudio_buffer[Audio_Buffer_Size/2 + 2*i]     = (int32_t)(int16_t)L << 8;
+      txaudio_buffer[Audio_Buffer_Size/2 + 2*i + 1] = (int32_t)(int16_t)R << 8;
     }
   }
-  SCB_CleanDCache_by_Addr((uint32_t *)(audio_buffer + Audio_Buffer_Size / 2),sizeof(audio_buffer) / 2);
-} 
+  SCB_CleanDCache_by_Addr((uint32_t *)(txaudio_buffer + Audio_Buffer_Size / 2),sizeof(txaudio_buffer) / 2);
+}
+
+
+void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+  I2S_RX_State = 1;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  vTaskNotifyGiveFromISR(DatacollecTaskHandle, &xHigherPriorityTaskWoken);
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+  SCB_InvalidateDCache_by_Addr(rxaudio_buffer,sizeof(txaudio_buffer) / 2);
+}
+void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+  I2S_RX_State = 2;
+  BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+  vTaskNotifyGiveFromISR(DatacollecTaskHandle, &xHigherPriorityTaskWoken);
+  portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+  SCB_InvalidateDCache_by_Addr(rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(txaudio_buffer) / 2);
+}
 // static void QSPI_Flash_SelfTest(void)
 // {
 //     uint8_t wbuf[QSPI_FLASH_TEST_SIZE];

@@ -61,7 +61,15 @@ extern "C" {
 #define AUDIO_OUT_EP                                  0x01U
 #endif /* AUDIO_OUT_EP */
 
-#define USB_AUDIO_CONFIG_DESC_SIZ                     0x6DU
+#ifndef AUDIO_FEEDBACK_EP
+#define AUDIO_FEEDBACK_EP                             0x81U
+#endif /* AUDIO_FEEDBACK_EP */
+
+#ifndef AUDIO_FEEDBACK_PACKET
+#define AUDIO_FEEDBACK_PACKET                         3U
+#endif /* AUDIO_FEEDBACK_PACKET */
+
+#define USB_AUDIO_CONFIG_DESC_SIZ                     0x76U
 #define AUDIO_INTERFACE_DESC_SIZE                     0x09U
 #define USB_AUDIO_DESC_SIZ                            0x09U
 #define AUDIO_STANDARD_ENDPOINT_DESC_SIZE             0x09U
@@ -106,6 +114,7 @@ extern "C" {
 
 
 #define AUDIO_OUT_PACKET                              (uint16_t)(((USBD_AUDIO_FREQ * 2U * 2U) / 1000U))
+#define AUDIO_OUT_PACKET_MAX                          (uint16_t)(AUDIO_OUT_PACKET + 4U)
 #define AUDIO_DEFAULT_VOLUME                          70U
 
 /* Number of sub-packets in the audio transfer buffer. You can modify this value but always make sure
@@ -150,7 +159,7 @@ typedef struct
 typedef struct
 {
   uint32_t alt_setting;
-  uint8_t buffer[AUDIO_TOTAL_BUF_SIZE];
+  uint8_t buffer[AUDIO_TOTAL_BUF_SIZE + AUDIO_OUT_PACKET_MAX];
   AUDIO_OffsetTypeDef offset;
   uint8_t rd_enable;
   uint16_t rd_ptr;

@@ -60,6 +60,12 @@ uint8_t AUDIO_Buffer_Read(uint8_t *data,uint16_t size)
   }
   return 0;
 }
+
+uint16_t AUDIO_Buffer_GetFill(void)
+{
+  return (uint16_t)((write_index - read_index) & (USB_AUDIO_BUFFER_SIZE - 1u));
+}
+
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -126,7 +132,29 @@ uint8_t AUDIO_Buffer_Read(uint8_t *data,uint16_t size)
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 volatile uint32_t write_error_count;
+volatile uint32_t read_error_count;
 volatile uint32_t write_index2;
+
+uint32_t Get_write_error_count(void)
+{
+  return write_error_count;
+}
+void Set_write_error_count(uint32_t data)
+{
+  write_error_count = data;
+}
+uint32_t Get_read_error_count(void)
+{
+  return read_error_count;
+}
+void Set_read_error_count(uint32_t data)
+{
+  read_error_count = data;
+}
+void Plus_read_error_count(void)
+{
+  read_error_count++;
+}
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**

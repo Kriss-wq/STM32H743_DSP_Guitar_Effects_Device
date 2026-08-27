@@ -115,8 +115,14 @@ void TransferComplete_CallBack_FS(void);
 void HalfTransfer_CallBack_FS(void);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-#define USB_AUDIO_BUFFER_SIZE 8192
+#define USB_AUDIO_BUFFER_SIZE 4096
    uint8_t AUDIO_Buffer_Read(uint8_t *data,uint16_t size);
+   uint16_t AUDIO_Buffer_GetFill(void);
+   uint32_t Get_write_error_count(void);
+   void Set_write_error_count(uint32_t data);
+   uint32_t Get_read_error_count(void);
+   void Set_read_error_count(uint32_t data);
+   void Plus_read_error_count(void);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
