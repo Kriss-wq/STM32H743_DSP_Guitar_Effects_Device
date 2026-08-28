@@ -93,10 +93,7 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 # Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
-        Ai
-)
+
 
 # Add sources to executable
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
@@ -124,8 +121,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         BSP/Inc
 
 )
-add_subdirectory(lvgl_main)
-
+add_subdirectory(APP/Mylvgl)
+add_subdirectory(APP/Effect)
 
 
 # Add project symbols (macros)
@@ -140,6 +137,7 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     ui
     stm32cubemx
+        effect
         ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM7lfdp_math.a
     -lm
     # Add user defined libraries

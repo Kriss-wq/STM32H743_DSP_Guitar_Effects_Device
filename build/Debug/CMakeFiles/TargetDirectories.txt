@@ -6,6 +6,9 @@ D:/H7/build/Debug/cmake/stm32cubemx/CMakeFiles/USB_Device_Library.dir
 D:/H7/build/Debug/cmake/stm32cubemx/CMakeFiles/FreeRTOS.dir
 D:/H7/build/Debug/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
 D:/H7/build/Debug/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
-D:/H7/build/Debug/lvgl_main/CMakeFiles/ui.dir
-D:/H7/build/Debug/lvgl_main/CMakeFiles/edit_cache.dir
-D:/H7/build/Debug/lvgl_main/CMakeFiles/rebuild_cache.dir
+D:/H7/build/Debug/APP/Mylvgl/CMakeFiles/ui.dir
+D:/H7/build/Debug/APP/Mylvgl/CMakeFiles/edit_cache.dir
+D:/H7/build/Debug/APP/Mylvgl/CMakeFiles/rebuild_cache.dir
+D:/H7/build/Debug/APP/Effect/CMakeFiles/effect.dir
+D:/H7/build/Debug/APP/Effect/CMakeFiles/edit_cache.dir
+D:/H7/build/Debug/APP/Effect/CMakeFiles/rebuild_cache.dir
