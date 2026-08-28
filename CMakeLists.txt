@@ -121,9 +121,9 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         BSP/Inc
 
 )
-add_subdirectory(APP/Mylvgl)
+#add_subdirectory(APP/Mylvgl)
 add_subdirectory(APP/Effect)
-
+add_subdirectory(lvgl_main)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

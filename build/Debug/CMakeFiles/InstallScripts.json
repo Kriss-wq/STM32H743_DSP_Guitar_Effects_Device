@@ -3,8 +3,8 @@
 	[
 		"D:/H7/build/Debug/cmake_install.cmake",
 		"D:/H7/build/Debug/cmake/stm32cubemx/cmake_install.cmake",
-		"D:/H7/build/Debug/APP/Mylvgl/cmake_install.cmake",
-		"D:/H7/build/Debug/APP/Effect/cmake_install.cmake"
+		"D:/H7/build/Debug/APP/Effect/cmake_install.cmake",
+		"D:/H7/build/Debug/lvgl_main/cmake_install.cmake"
 	],
 	"Parallel" : false
 }

@@ -19,17 +19,20 @@ extern "C" {
 ///////////////////// SCREENS ////////////////////
 
 #include "screens/ui_Screen1.h"
+#include "screens/ui_Screen2.h"
+#include "screens/ui_Screen3.h"
 
 ///////////////////// VARIABLES ////////////////////
 
+extern lv_anim_t * backright_Animation(lv_obj_t * TargetObject, int delay);
 
 // EVENTS
 
 extern lv_obj_t * ui____initial_actions0;
 
 // FONTS
-LV_FONT_DECLARE(ui_font_Font1);
 LV_FONT_DECLARE(ui_font_chinese48);
+LV_FONT_DECLARE(ui_font_Font1);
 
 // UI INIT
 void ui_init(void);

@@ -6,6 +6,6 @@
 #define PROJECT2_TEST_H
 #include "effect_interface.h"
 
-effect_t Get_Test_t(void);
+effect_t* Get_Test_t(void);
 
 #endif //PROJECT2_TEST_H

@@ -1,31 +1,37 @@
 #include "stdint.h"
 #include "Test.h"
 //测试范例为TS808
+static void Test_Effect_Init(void);
+static void Test_Effect_Setup(uint8_t Gain,uint8_t Tone,uint8_t Level);
+static void Test_Effect_Process(float *in, float *out, uint16_t size);
+effect_t* Get_Test_t(void);
 
-static struct
-{
-    uint8_t Gain;
-    uint8_t Tone;
-    uint8_t Level;
-}Test_Param_t;
+effect_t Test_t = {
+    .name = "Test",
+    .param_name = {"Gain","Tone","Level"},
+    .Init = Test_Effect_Init,
+    .Setup = Test_Effect_Setup,
+    .Process = Test_Effect_Process
+};
+
 static void Test_Effect_Init(void)
 {
-    Test_Param_t.Gain = 50u;
-    Test_Param_t.Tone = 50u;
-    Test_Param_t.Level = 50u;
+    Test_t.param[0] = 50u;
+    Test_t.param[1] = 50u;
+    Test_t.param[2] = 50u;
 }
 
 static void Test_Effect_Setup(uint8_t Gain,uint8_t Tone,uint8_t Level)
 {
-    Test_Param_t.Gain = Gain;
-    Test_Param_t.Tone = Tone;
-    Test_Param_t.Level = Level;
+    Test_t.param[0] = Gain;
+    Test_t.param[1] = Tone;
+    Test_t.param[2] = Level;
 }
 
 static void Test_Effect_Process(float *in, float *out, uint16_t size)
 {
-    float gain = 1.0f + ((float)Test_Param_t.Gain / 100.0f) * 19.0f;
-    float level = (float)Test_Param_t.Level / 100.0f;
+    float gain = 1.0f + ((float)Test_t.param[0] / 100.0f) * 19.0f;
+    float level = (float)Test_t.param[2] / 100.0f;
 
     for (uint16_t i = 0; i < size; i++)
     {
@@ -53,14 +59,7 @@ static void Test_Effect_Process(float *in, float *out, uint16_t size)
     }
 }
 
-effect_t Test_t = {
-    .name = "Test",
-    .Init = Test_Effect_Init,
-    .Setup = Test_Effect_Setup,
-    .Process = Test_Effect_Process
-};
-
-effect_t Get_Test_t(void)
+effect_t* Get_Test_t(void)
 {
-    return Test_t;
+    return &Test_t;
 }

@@ -4,10 +4,60 @@
 // Project name: SquareLine_Project
 
 #include "../ui.h"
-
+#include "../../APP/Effect/Inc/effect.h"
 lv_obj_t * ui_Screen1 = NULL;
-lv_obj_t * ui_Label1 = NULL;
+lv_obj_t * ui_Container1 = NULL;
+lv_obj_t * ui_Button1 = NULL;
+lv_obj_t * ui_Button2 = NULL;
+lv_obj_t * ui_Button3 = NULL;
+lv_obj_t * ui_Button4 = NULL;
+lv_obj_t * ui_Button5 = NULL;
+lv_obj_t * ui_Button6 = NULL;
+lv_obj_t * ui_Button7 = NULL;
+lv_obj_t * ui_Button8 = NULL;
+lv_obj_t *label1 = NULL;
+lv_obj_t *label2 = NULL;
+lv_obj_t *label3 = NULL;
+lv_obj_t *label4 = NULL;
+lv_obj_t *label5 = NULL;
+lv_obj_t *label6 = NULL;
+lv_obj_t *label7 = NULL;
+lv_obj_t *label8 = NULL;
+
+uint8_t Button_Num = 0;
 // event funtions
+uint8_t ui_get_Button_Num(void)
+{
+    return Button_Num;
+}
+lv_obj_t * Button[8];
+lv_obj_t * Label[8];
+void ui_event_Button(lv_event_t * e)
+{
+    lv_obj_t * target = lv_event_get_target(e);
+    lv_event_code_t event_code = lv_event_get_code(e);
+    effect_all_t* effect_buffer = effect_buffer_get();
+    for (uint8_t i = 0; i < 8; i++)
+    {
+        if (target == Button[i])
+        {
+            Button_Num = i;
+            if(event_code == LV_EVENT_SHORT_CLICKED) {
+                _ui_screen_change(&ui_Screen2, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_Screen2_screen_init);
+            }
+            if(event_code == LV_EVENT_LONG_PRESSED) {
+                _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_Screen3_screen_init);
+                if (effect_buffer[Button_Num].Effect == NULL)
+                {
+                    continue;
+                }
+                lv_label_set_text(ui_Label1, effect_buffer[Button_Num].Effect->param_name[0]);
+                lv_label_set_text(ui_Label2, effect_buffer[Button_Num].Effect->param_name[1]);
+                lv_label_set_text(ui_Label3, effect_buffer[Button_Num].Effect->param_name[2]);
+            }
+        }
+    }
+}
 
 // build funtions
 
@@ -15,15 +65,159 @@ void ui_Screen1_screen_init(void)
 {
     ui_Screen1 = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_Screen1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_flex_flow(ui_Screen1, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Screen1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
-    ui_Label1 = lv_label_create(ui_Screen1);
-    lv_obj_set_width(ui_Label1, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_Label1, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_Label1, -7);
-    lv_obj_set_y(ui_Label1, -138);
-    lv_obj_set_align(ui_Label1, LV_ALIGN_CENTER);
-    lv_obj_set_style_text_font(ui_Label1, &ui_font_chinese48, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text(ui_Label1, "2026-ST-TASK");
+    ui_Container1 = lv_obj_create(ui_Screen1);
+    lv_obj_remove_style_all(ui_Container1);
+    lv_obj_set_width(ui_Container1, 800);
+    lv_obj_set_height(ui_Container1, 480);
+    lv_obj_set_x(ui_Container1, -228);
+    lv_obj_set_y(ui_Container1, -81);
+    lv_obj_set_align(ui_Container1, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_Container1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button1 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button1, 120);
+    lv_obj_set_height(ui_Button1, 120);
+    lv_obj_set_x(ui_Button1, -280);
+    lv_obj_set_y(ui_Button1, -130);
+    lv_obj_set_align(ui_Button1, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button1, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button1, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button2 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button2, 120);
+    lv_obj_set_height(ui_Button2, 120);
+    lv_obj_set_x(ui_Button2, -100);
+    lv_obj_set_y(ui_Button2, -130);
+    lv_obj_set_align(ui_Button2, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button2, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button2, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button2, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button3 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button3, 120);
+    lv_obj_set_height(ui_Button3, 120);
+    lv_obj_set_x(ui_Button3, 85);
+    lv_obj_set_y(ui_Button3, -130);
+    lv_obj_set_align(ui_Button3, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button3, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button3, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button3, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button3, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button4 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button4, 120);
+    lv_obj_set_height(ui_Button4, 120);
+    lv_obj_set_x(ui_Button4, 260);
+    lv_obj_set_y(ui_Button4, -130);
+    lv_obj_set_align(ui_Button4, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button4, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button4, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button4, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button4, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button5 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button5, 120);
+    lv_obj_set_height(ui_Button5, 120);
+    lv_obj_set_x(ui_Button5, -280);
+    lv_obj_set_y(ui_Button5, 90);
+    lv_obj_set_align(ui_Button5, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button5, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button5, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button5, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button5, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button6 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button6, 120);
+    lv_obj_set_height(ui_Button6, 120);
+    lv_obj_set_x(ui_Button6, -100);
+    lv_obj_set_y(ui_Button6, 90);
+    lv_obj_set_align(ui_Button6, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button6, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button6, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button6, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button6, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button7 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button7, 120);
+    lv_obj_set_height(ui_Button7, 120);
+    lv_obj_set_x(ui_Button7, 85);
+    lv_obj_set_y(ui_Button7, 90);
+    lv_obj_set_align(ui_Button7, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button7, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button7, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button7, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button7, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_Button8 = lv_btn_create(ui_Container1);
+    lv_obj_set_width(ui_Button8, 120);
+    lv_obj_set_height(ui_Button8, 120);
+    lv_obj_set_x(ui_Button8, 260);
+    lv_obj_set_y(ui_Button8, 90);
+    lv_obj_set_align(ui_Button8, LV_ALIGN_CENTER);
+    lv_obj_set_flex_flow(ui_Button8, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Button8, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_add_flag(ui_Button8, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_Button8, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    lv_obj_add_event_cb(ui_Button1, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button2, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button3, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button4, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button5, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button6, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button7, ui_event_Button, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Button8, ui_event_Button, LV_EVENT_ALL, NULL);
+
+    label1 = lv_label_create(ui_Button1);
+    lv_label_set_text(label1, "NULL");
+    label2 = lv_label_create(ui_Button2);
+    lv_label_set_text(label2, "NULL");
+    label3 = lv_label_create(ui_Button3);
+    lv_label_set_text(label3, "NULL");
+    label4 = lv_label_create(ui_Button4);
+    lv_label_set_text(label4, "NULL");
+    label5 = lv_label_create(ui_Button5);
+    lv_label_set_text(label5, "NULL");
+    label6 = lv_label_create(ui_Button6);
+    lv_label_set_text(label6, "NULL");
+    label7 = lv_label_create(ui_Button7);
+    lv_label_set_text(label7, "NULL");
+    label8 = lv_label_create(ui_Button8);
+    lv_label_set_text(label8, "NULL");
+
+    lv_obj_center(label1);
+    lv_obj_center(label2);
+    lv_obj_center(label3);
+    lv_obj_center(label4);
+    lv_obj_center(label5);
+    lv_obj_center(label6);
+    lv_obj_center(label7);
+    lv_obj_center(label8);
+
+    Button[0] = ui_Button1;
+    Button[1] = ui_Button2;
+    Button[2] = ui_Button3;
+    Button[3] = ui_Button4;
+    Button[4] = ui_Button5;
+    Button[5] = ui_Button6;
+    Button[6] = ui_Button7;
+    Button[7] = ui_Button8;
+
+    Label[0] = label1;
+    Label[1] = label2;
+    Label[2] = label3;
+    Label[3] = label4;
+    Label[4] = label5;
+    Label[5] = label6;
+    Label[6] = label7;
+    Label[7] = label8;
+
 }
 
 void ui_Screen1_screen_destroy(void)
@@ -32,6 +226,14 @@ void ui_Screen1_screen_destroy(void)
 
     // NULL screen variables
     ui_Screen1 = NULL;
-    ui_Label1 = NULL;
+    ui_Container1 = NULL;
+    ui_Button1 = NULL;
+    ui_Button2 = NULL;
+    ui_Button3 = NULL;
+    ui_Button4 = NULL;
+    ui_Button5 = NULL;
+    ui_Button6 = NULL;
+    ui_Button7 = NULL;
+    ui_Button8 = NULL;
 
 }

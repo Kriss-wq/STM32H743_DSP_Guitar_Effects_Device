@@ -1,5 +1,5 @@
 "D:\CLion 2025.2.4\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug --preset Debug -S D:\H7 -B D:\H7\build\Debug
 Build type: Debug
--- Configuring done (0.2s)
--- Generating done (0.3s)
+-- Configuring done (0.3s)
+-- Generating done (0.7s)
 -- Build files have been written to: D:/H7/build/Debug

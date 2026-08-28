@@ -1,4 +1,4 @@
-
+#include "stdint.h"
 #ifndef PROJECT2_EFFECT_INTERFACE_H
 #define PROJECT2_EFFECT_INTERFACE_H
 /*
@@ -10,9 +10,11 @@
 typedef struct
 {
     char name[16];
-    void (*Init)();
+    char param_name[3][16];
+    uint8_t param[3];
+    void (*Init)(void);
     void (*Process)(float *in, float *out, uint16_t size);
-    void (*Setup)(uint8_t Gain,uint8_t Tone,uint8_t Level);
+    void (*Setup)(uint8_t param1,uint8_t param2,uint8_t param3);
 }effect_t;
 
 typedef struct

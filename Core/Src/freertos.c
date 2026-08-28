@@ -36,10 +36,8 @@
 #include "touch_800x480.h"
 #include "porting/lv_port_disp.h"
 #include "porting/lv_port_indev.h"
-#include "LED.h"
+
 #include "../../lvgl_main/ui.h"
-#include "../../lvgl_main/ui_buttons.h"
-#include "../../lvgl_main/ui_center_labels.h"
 #include "tim.h"
 #include "benchmark/lv_demo_benchmark.h"
 #include "arm_math.h"
@@ -49,8 +47,8 @@
 #include "usbd_audio_if.h"
 #include "usb_device.h"
 #include "Test.h"
-#include "gui_guider.h"
-#include "events_init.h"
+//#include "gui_guider.h"
+//#include "events_init.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -152,7 +150,7 @@ __attribute__((section(".ram"))) float audio_process_buffer[Audio_Buffer_Size/2]
 volatile SemaphoreHandle_t xRxI2SSemaphore;
 volatile uint8_t I2S_RX_State;
 
-lv_ui guider_ui;
+// lv_ui guider_ui;
 void vApplicationTickHook(void)
 {
     /* This function will be called by each tick interrupt if
@@ -183,7 +181,6 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_SEMAPHORES */
     /* add semaphores, ... */
 
-  xRxI2SSemaphore = xSemaphoreCreateBinary();
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -227,9 +224,9 @@ void DisplayTaskEntry(void *argument)
     lv_init();
     lv_port_disp_init();
     lv_port_indev_init();
-  setup_ui(&guider_ui);           // 初始化 UI
-  events_init(&guider_ui);
-    //ui_init();
+  // setup_ui(&guider_ui);           // 初始化 UI
+  // events_init(&guider_ui);
+    ui_init();
     //ui_center_labels_create(ui_Screen1);
     //lv_demo_music();
 
@@ -243,10 +240,10 @@ void DisplayTaskEntry(void *argument)
         // ui_center_labels_set_text_fmt(0,"rerror:%ld",Get_read_error_count());
         // ui_center_labels_set_text_fmt(1,"werror:%ld",Get_write_error_count());
         // ui_center_labels_set_text_fmt(2,"tick:%ld",rxaudio_buffer[0]);
-        {
+
           extern volatile uint32_t audio_fb_hz_dbg;
           //ui_center_labels_set_text_fmt(3,"hz:%lu",(unsigned long)audio_fb_hz_dbg);
-        }
+
         TickType_t xLastWakeTime = xTaskGetTickCount();
         vTaskDelayUntil(&xLastWakeTime, 13);
     }
@@ -293,7 +290,7 @@ void DatacollecTaskEntry(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-effect_t Test_Effect_T;
+effect_t* Test_Effect_T;
 
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
@@ -319,8 +316,8 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
       // txaudio_buffer[2 * i + 1] = (int32_t)(int16_t)R << 8;
     }
     float audio_out_buffer[Audio_Buffer_Size / 4];
-    Test_Effect_T.Init();
-    Test_Effect_T.Process(audio_process_buffer,audio_out_buffer,Audio_Buffer_Size/4);
+    Test_Effect_T->Init();
+    Test_Effect_T->Process(audio_process_buffer,audio_out_buffer,Audio_Buffer_Size/4);
     for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)
     {
       txaudio_buffer[2 * i] = (int32_t)(audio_out_buffer[i] / (1.0f / 8388607.0f));
@@ -353,8 +350,8 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
     }
 
     float audio_out_buffer[Audio_Buffer_Size / 4];
-    Test_Effect_T.Init();
-    Test_Effect_T.Process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
+    Test_Effect_T->Init();
+    Test_Effect_T->Process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
 
     for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)
     {
