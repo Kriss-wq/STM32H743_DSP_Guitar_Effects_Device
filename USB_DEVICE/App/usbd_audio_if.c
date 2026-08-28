@@ -311,9 +311,9 @@ static int8_t AUDIO_PeriodicTC_FS(uint8_t *pbuf, uint32_t size, uint8_t cmd)
   // }
   if (AUDIO_Buffer_Write(pbuf,(uint16_t)size)!=0)
   {
-    write_error_count++;
+    //write_error_count++;
   }
-  write_index2 = write_error_count;
+  //write_index2 = write_error_count;
   __enable_irq();
 
   return (USBD_OK);

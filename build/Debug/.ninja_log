@@ -454,3 +454,17 @@
 38	844	8096349338391047	lvgl_main/CMakeFiles/ui.dir/screens/ui_Screen1.c.obj	889c9786ee095c29
 846	1039	8096349346472376	lvgl_main/libui.a	ef17ef467ea8c7a0
 1039	2938	8096349348402546	Project2.elf	71988ed09dfd6cc0
+46	939	8096354065759077	lvgl_main/CMakeFiles/ui.dir/screens/ui_Screen1.c.obj	889c9786ee095c29
+940	1133	8096354074698937	lvgl_main/libui.a	ef17ef467ea8c7a0
+1133	3563	8096354076644920	Project2.elf	71988ed09dfd6cc0
+41	1747	8096359925539396	CMakeFiles/Project2.dir/Core/Src/freertos.c.obj	b0cb8aa9a8bfb78e
+1751	4528	8096359942648717	Project2.elf	71988ed09dfd6cc0
+32	1083	8096360433204094	CMakeFiles/Project2.dir/USB_DEVICE/App/usbd_audio_if.c.obj	5d5cf15100699f53
+1084	3344	8096360443722430	Project2.elf	71988ed09dfd6cc0
+58	738	8096361264323247	lvgl_main/CMakeFiles/ui.dir/screens/ui_Screen3.c.obj	75c9e54d258abe20
+742	938	8096361271184464	lvgl_main/libui.a	ef17ef467ea8c7a0
+938	3312	8096361273134616	Project2.elf	71988ed09dfd6cc0
+43	766	8096361979584900	lvgl_main/CMakeFiles/ui.dir/screens/ui_Screen2.c.obj	8b014353bdb895ed
+56	777	8096361979714894	lvgl_main/CMakeFiles/ui.dir/screens/ui_Screen3.c.obj	75c9e54d258abe20
+777	947	8096361986931119	lvgl_main/libui.a	ef17ef467ea8c7a0
+947	3532	8096361988626961	Project2.elf	71988ed09dfd6cc0

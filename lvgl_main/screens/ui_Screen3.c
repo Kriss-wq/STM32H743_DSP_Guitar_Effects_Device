@@ -28,7 +28,7 @@ void ui_event_Arc(lv_event_t * e)
             if(event_code == LV_EVENT_VALUE_CHANGED)
             {
                 uint8_t Value = (uint8_t)lv_arc_get_value(Arc[i]);
-                effect_buffer[ui_get_Button_Num()].Effect->param[i] = Value;
+                effect_buffer->Effect[ui_get_Button_Num()].param[i] = Value;
             }
         }
     }
@@ -39,7 +39,7 @@ void ui_event_Button12(lv_event_t * e)
     lv_event_code_t event_code = lv_event_get_code(e);
 
     if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_Screen1, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, &ui_Screen1_screen_init);
+        _ui_screen_change(&ui_Screen1, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_Screen1_screen_init);
     }
 }
 

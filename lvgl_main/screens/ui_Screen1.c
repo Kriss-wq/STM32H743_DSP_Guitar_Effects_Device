@@ -47,13 +47,12 @@ void ui_event_Button(lv_event_t * e)
             }
             if(event_code == LV_EVENT_LONG_PRESSED) {
                 _ui_screen_change(&ui_Screen3, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_Screen3_screen_init);
-                if (effect_buffer[Button_Num].Effect == NULL)
-                {
-                    continue;
+                if (effect_buffer->Effect[Button_Num].Init == NULL) {
+                    return;
                 }
-                lv_label_set_text(ui_Label1, effect_buffer[Button_Num].Effect->param_name[0]);
-                lv_label_set_text(ui_Label2, effect_buffer[Button_Num].Effect->param_name[1]);
-                lv_label_set_text(ui_Label3, effect_buffer[Button_Num].Effect->param_name[2]);
+                lv_label_set_text(ui_Label1,effect_buffer->Effect[Button_Num].param_name[0]);
+                lv_label_set_text(ui_Label2, effect_buffer->Effect[Button_Num].param_name[1]);
+                lv_label_set_text(ui_Label3, effect_buffer->Effect[Button_Num].param_name[2]);
             }
         }
     }
