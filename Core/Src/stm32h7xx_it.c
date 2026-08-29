@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* #include "porting/lv_port_disp.h" */
+#include "touch_800x480.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -283,5 +284,13 @@ void OTG_FS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief EXTI line[15:10] interrupt (GT911 INT on PI11).
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  Touch_INT_IRQHandler();
+}
 
 /* USER CODE END 1 */

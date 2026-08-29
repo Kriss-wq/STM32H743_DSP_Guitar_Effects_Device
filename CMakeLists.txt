@@ -13,7 +13,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
 add_compile_definitions(ARM_MATH_CM7;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
-add_compile_options(-mfloat-abi=hard -mfpu=fpv5-d16 -O3)
+add_compile_options(-mfloat-abi=hard -mfpu=fpv5-d16 -Ofast)
 add_link_options(-mfloat-abi=hard -mfpu=fpv5-d16 )
 
 function(collect_subdirectories OUTPUT_VAR ROOT_DIR)

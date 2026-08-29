@@ -1,9 +1,9 @@
 #include "stdint.h"
 #include "Test.h"
 //测试范例为TS808
-static void Test_Effect_Init(void);
-static void Test_Effect_Setup(uint8_t Gain,uint8_t Tone,uint8_t Level);
-static void Test_Effect_Process(float *in, float *out, uint16_t size);
+static void Test_Effect_Init(effect_t* effect);
+static void Test_Effect_Setup(effect_t* effect,uint8_t Gain,uint8_t Tone,uint8_t Level);
+static void Test_Effect_Process(effect_t* effect,float *in, float *out, uint16_t size);
 effect_t* Get_Test_t(void);
 
 effect_t Test_t = {
@@ -14,24 +14,24 @@ effect_t Test_t = {
     .Process = Test_Effect_Process
 };
 
-static void Test_Effect_Init(void)
+static void Test_Effect_Init(effect_t* effect)
 {
-    Test_t.param[0] = 50u;
-    Test_t.param[1] = 50u;
-    Test_t.param[2] = 50u;
+    effect->param[0] = 50u;
+    effect->param[1] = 50u;
+    effect->param[2] = 50u;
 }
 
-static void Test_Effect_Setup(uint8_t Gain,uint8_t Tone,uint8_t Level)
+static void Test_Effect_Setup(effect_t* effect,uint8_t Gain,uint8_t Tone,uint8_t Level)
 {
-    Test_t.param[0] = Gain;
-    Test_t.param[1] = Tone;
-    Test_t.param[2] = Level;
+    effect->param[0] = Gain;
+    effect->param[1] = Tone;
+    effect->param[2] = Level;
 }
 
-static void Test_Effect_Process(float *in, float *out, uint16_t size)
+static void Test_Effect_Process(effect_t* effect,float *in, float *out, uint16_t size)
 {
-    float gain = 1.0f + ((float)Test_t.param[0] / 100.0f) * 19.0f;
-    float level = (float)Test_t.param[2] / 100.0f;
+    float gain = 1.0f + ((float)effect->param[0] / 100.0f) * 19.0f;
+    float level = (float)effect->param[2] / 100.0f;
 
     for (uint16_t i = 0; i < size; i++)
     {

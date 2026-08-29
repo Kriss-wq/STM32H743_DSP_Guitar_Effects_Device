@@ -196,17 +196,19 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 {
     static lv_coord_t last_x = 0;
     static lv_coord_t last_y = 0;
+    TouchSnapshot snap;
 
-    /*Save the pressed coordinates and the state*/
-    if(touchpad_is_pressed()) {
-        touchpad_get_xy(&last_x, &last_y);
+    Touch_Info_Get(&snap);
+
+    if(snap.flag == 1) {
+        last_x = (lv_coord_t)snap.x[0];
+        last_y = (lv_coord_t)snap.y[0];
         data->state = LV_INDEV_STATE_PR;
     }
     else {
         data->state = LV_INDEV_STATE_REL;
     }
 
-    /*Set the last pressed coordinates*/
     data->point.x = last_x;
     data->point.y = last_y;
 }
@@ -214,24 +216,18 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 /*Return true is the touchpad is pressed*/
 static bool touchpad_is_pressed(void)
 {
-    /*Your code comes here*/
-    if(touchInfo.flag == 1)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    TouchSnapshot snap;
+    Touch_Info_Get(&snap);
+    return snap.flag == 1;
 }
 
 /*Get the x and y coordinates if the touchpad is pressed*/
 static void touchpad_get_xy(lv_coord_t * x, lv_coord_t * y)
 {
-    /*Your code comes here*/
-
-    (*x) = touchInfo.x[0];
-    (*y) = touchInfo.y[0];
+    TouchSnapshot snap;
+    Touch_Info_Get(&snap);
+    (*x) = (lv_coord_t)snap.x[0];
+    (*y) = (lv_coord_t)snap.y[0];
 }
 
 /*Return true is the touchpad is pressed*/

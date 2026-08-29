@@ -20,7 +20,7 @@ void ui_event_Arc(lv_event_t * e)
 {
     lv_obj_t * target = lv_event_get_target(e);
     lv_event_code_t event_code = lv_event_get_code(e);
-    effect_all_t* effect_buffer = effect_buffer_get();
+    effect_process_t* effect_buffer = effect_buffer_get();
     for (uint8_t i = 0; i < 3; i++)
     {
         if (target == Arc[i])
@@ -31,6 +31,18 @@ void ui_event_Arc(lv_event_t * e)
                 effect_buffer->Effect[ui_get_Button_Num()].param[i] = Value;
             }
         }
+    }
+}
+
+void ui_event_Button11(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+
+    if (event_code == LV_EVENT_CLICKED)
+    {
+        effect_process_t* effect_buffer = effect_buffer_get();
+        uint8_t num = ui_get_Button_Num();
+        effect_buffer->Effect[num].enable = !effect_buffer->Effect[num].enable;
     }
 }
 
@@ -119,11 +131,12 @@ void ui_Screen3_screen_init(void)
     lv_obj_add_flag(ui_Button12, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
     lv_obj_clear_flag(ui_Button12, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
+    lv_obj_add_event_cb(ui_Button11, ui_event_Button11, LV_EVENT_ALL, NULL);
     lv_obj_add_event_cb(ui_Button12, ui_event_Button12, LV_EVENT_ALL, NULL);
 
     lv_obj_add_event_cb(ui_Arc2, ui_event_Arc, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_Arc2, ui_event_Arc, LV_EVENT_ALL, NULL);
-    lv_obj_add_event_cb(ui_Arc2, ui_event_Arc, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Arc3, ui_event_Arc, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_Arc4, ui_event_Arc, LV_EVENT_ALL, NULL);
     Arc[0] = ui_Arc2;
     Arc[1] = ui_Arc3;
     Arc[2] = ui_Arc4;

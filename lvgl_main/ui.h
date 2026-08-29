@@ -38,6 +38,9 @@ LV_FONT_DECLARE(ui_font_Font1);
 void ui_init(void);
 void ui_destroy(void);
 
+// CPU 占用显示(由 freertos.c 的 DisplayTask 每秒调用一次)
+void ui_set_cpu_usage(uint32_t pct, uint32_t avg_cycles);
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

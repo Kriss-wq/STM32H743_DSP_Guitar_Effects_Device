@@ -23,6 +23,7 @@ lv_obj_t *label5 = NULL;
 lv_obj_t *label6 = NULL;
 lv_obj_t *label7 = NULL;
 lv_obj_t *label8 = NULL;
+lv_obj_t *ui_CPU_Label = NULL;
 
 uint8_t Button_Num = 0;
 // event funtions
@@ -30,13 +31,19 @@ uint8_t ui_get_Button_Num(void)
 {
     return Button_Num;
 }
+void ui_set_cpu_usage(uint32_t pct, uint32_t avg_cycles)
+{
+    if (ui_CPU_Label != NULL)
+        lv_label_set_text_fmt(ui_CPU_Label, "CPU: %lu%%  %lu/blk",
+                              (unsigned long)pct, (unsigned long)avg_cycles);
+}
 lv_obj_t * Button[8];
 lv_obj_t * Label[8];
 void ui_event_Button(lv_event_t * e)
 {
     lv_obj_t * target = lv_event_get_target(e);
     lv_event_code_t event_code = lv_event_get_code(e);
-    effect_all_t* effect_buffer = effect_buffer_get();
+    effect_process_t* effect_buffer = effect_buffer_get();
     for (uint8_t i = 0; i < 8; i++)
     {
         if (target == Button[i])
@@ -50,6 +57,9 @@ void ui_event_Button(lv_event_t * e)
                 if (effect_buffer->Effect[Button_Num].Init == NULL) {
                     return;
                 }
+                lv_arc_set_value(ui_Arc2,effect_buffer->Effect[Button_Num].param[0]);
+                lv_arc_set_value(ui_Arc3,effect_buffer->Effect[Button_Num].param[1]);
+                lv_arc_set_value(ui_Arc4,effect_buffer->Effect[Button_Num].param[2]);
                 lv_label_set_text(ui_Label1,effect_buffer->Effect[Button_Num].param_name[0]);
                 lv_label_set_text(ui_Label2, effect_buffer->Effect[Button_Num].param_name[1]);
                 lv_label_set_text(ui_Label3, effect_buffer->Effect[Button_Num].param_name[2]);
@@ -64,8 +74,8 @@ void ui_Screen1_screen_init(void)
 {
     ui_Screen1 = lv_obj_create(NULL);
     lv_obj_clear_flag(ui_Screen1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
-    lv_obj_set_flex_flow(ui_Screen1, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(ui_Screen1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+
+    /* 右上角 CPU 占用显示 */
 
     ui_Container1 = lv_obj_create(ui_Screen1);
     lv_obj_remove_style_all(ui_Container1);
@@ -75,6 +85,13 @@ void ui_Screen1_screen_init(void)
     lv_obj_set_y(ui_Container1, -81);
     lv_obj_set_align(ui_Container1, LV_ALIGN_CENTER);
     lv_obj_clear_flag(ui_Container1, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_CPU_Label = lv_label_create(ui_Container1);
+    lv_label_set_text(ui_CPU_Label, "CPU: --%");
+    lv_obj_set_style_text_color(ui_CPU_Label, lv_color_black(), 0);
+    lv_obj_align(ui_CPU_Label, LV_ALIGN_CENTER, -10, 10);
+    lv_obj_set_flex_flow(ui_Screen1, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(ui_Screen1, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
 
     ui_Button1 = lv_btn_create(ui_Container1);
     lv_obj_set_width(ui_Button1, 120);
@@ -234,5 +251,6 @@ void ui_Screen1_screen_destroy(void)
     ui_Button6 = NULL;
     ui_Button7 = NULL;
     ui_Button8 = NULL;
+    ui_CPU_Label = NULL;
 
 }

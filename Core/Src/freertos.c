@@ -41,6 +41,7 @@
 #include "tim.h"
 #include "benchmark/lv_demo_benchmark.h"
 #include "arm_math.h"
+#include "effect.h"
 #include "usbd_core.h"
 #include "main.h"
 #include "semphr.h"
@@ -79,7 +80,7 @@ static volatile TIM3_CaptureResult_t s_tim3_capture;
 /* USER CODE END Variables */
 /* Definitions for DisplayTask */
 osThreadId_t DisplayTaskHandle;
-uint32_t DisplayTaskBuffer[ 2048 ];
+uint32_t DisplayTaskBuffer[ 4096 ];
 osStaticThreadDef_t DisplayTaskControlBlock;
 const osThreadAttr_t DisplayTask_attributes = {
   .name = "DisplayTask",
@@ -130,22 +131,30 @@ void vApplicationIdleHook( void )
    function, because it is the responsibility of the idle task to clean up
    memory allocated by the kernel to any task that has since been deleted. */
     //__WFI();
+  __HAL_RCC_USB_OTG_FS_ULPI_CLK_SLEEP_DISABLE();
+  __HAL_RCC_USB_OTG_FS_CLK_SLEEP_ENABLE();
+  __WFI();  // 进入休眠
 }
 /* USER CODE END 2 */
 
 /* USER CODE BEGIN 3 */
-#define LOG_BUFFER_SIZE 256
+#define   LOG_BUFFER_SIZE 256
 #define Audio_Buffer_Size 64
 
 volatile static uint32_t tick;
 __attribute__((section(".ram"))) float x = 0;
 __attribute__((section(".ram"))) float z = 0;
 __attribute__((section(".ram"))) int32_t y = 0;
-__attribute__((section(".ram"))) uint8_t USBaudio_buffer[USB_AUDIO_BUFFER_SIZE];
-__attribute__((section(".ram"))) int32_t txaudio_buffer[Audio_Buffer_Size];
-__attribute__((section(".ram"))) int32_t rxaudio_buffer[Audio_Buffer_Size];
-__attribute__((section(".ram"))) uint8_t log_buffer[LOG_BUFFER_SIZE];
-__attribute__((section(".ram"))) float audio_process_buffer[Audio_Buffer_Size/2];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) uint8_t USBaudio_buffer[USB_AUDIO_BUFFER_SIZE];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) int32_t txaudio_buffer[Audio_Buffer_Size];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) int32_t rxaudio_buffer[Audio_Buffer_Size];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) uint8_t log_buffer[LOG_BUFFER_SIZE];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) float audio_process_buffer[Audio_Buffer_Size/2];
+__attribute__((aligned(32)))__attribute__((section(".ram"))) float audio_out_buffer[Audio_Buffer_Size/4];
+
+
+volatile uint32_t g_audio_cycles = 0;
+volatile uint32_t g_audio_blocks = 0;
 
 volatile SemaphoreHandle_t xRxI2SSemaphore;
 volatile uint8_t I2S_RX_State;
@@ -171,7 +180,10 @@ void vApplicationTickHook(void)
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+    /* 开启 DWT 周期计数器(CPU 占用测量用,计数值 = CPU 时钟数) */
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0;
+    DWT->CTRL   |= DWT_CTRL_CYCCNTENA_Msk;
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -217,7 +229,6 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_DisplayTaskEntry */
 void DisplayTaskEntry(void *argument)
 {
-  /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN DisplayTaskEntry */
     Touch_Init();
@@ -233,16 +244,33 @@ void DisplayTaskEntry(void *argument)
     //ui_buttons_create(ui_Screen1);
     // lv_obj_t * Canvas = ui_Canvas_Creat(ui_Container8);
     /* Infinite loop */
+    uint32_t last_cpu_tick = xTaskGetTickCount();
+    uint32_t win_t0 = DWT->CYCCNT;
     for (;;)
     {
-        lv_task_handler();
         Touch_Scan();
-        // ui_center_labels_set_text_fmt(0,"rerror:%ld",Get_read_error_count());
-        // ui_center_labels_set_text_fmt(1,"werror:%ld",Get_write_error_count());
-        // ui_center_labels_set_text_fmt(2,"tick:%ld",rxaudio_buffer[0]);
+        lv_task_handler();
 
-          extern volatile uint32_t audio_fb_hz_dbg;
-          //ui_center_labels_set_text_fmt(3,"hz:%lu",(unsigned long)audio_fb_hz_dbg);
+        /* 每秒结算一次音频中断的 CPU 占用率 */
+        uint32_t now_tick = xTaskGetTickCount();
+        uint32_t ms = (uint32_t)(now_tick - last_cpu_tick);
+        if (ms >= 1000)
+        {
+            uint32_t win_cyc = DWT->CYCCNT - win_t0;
+            uint32_t cyc     = g_audio_cycles;
+            g_audio_cycles -= cyc;
+            uint32_t blocks  = g_audio_blocks;
+            g_audio_blocks   = 0;
+
+            uint32_t pct = (win_cyc == 0) ? 0u :
+                           (uint32_t)(((uint64_t)cyc * 100u) / win_cyc);
+            uint32_t avg = (blocks == 0) ? 0u : cyc / blocks;
+
+            ui_set_cpu_usage(pct, avg);
+
+            win_t0 = DWT->CYCCNT;
+            last_cpu_tick = now_tick;
+        }
 
         TickType_t xLastWakeTime = xTaskGetTickCount();
         vTaskDelayUntil(&xLastWakeTime, 13);
@@ -261,7 +289,7 @@ void DatacollecTaskEntry(void *argument)
 {
   /* USER CODE BEGIN DatacollecTaskEntry */
     uint8_t debug;
-    MX_USB_DEVICE_Init();
+
     TIM3_CaptureResult_t tim3_result;
 
     osDelay(1000);
@@ -282,7 +310,6 @@ void DatacollecTaskEntry(void *argument)
       else if (I2S_RX_State == 2)
       {
         memcpy(txaudio_buffer + Audio_Buffer_Size / 2,rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(int32_t)*Audio_Buffer_Size/2);
-
       }
     }
   /* USER CODE END DatacollecTaskEntry */
@@ -294,42 +321,42 @@ effect_t* Test_Effect_T;
 
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  Test_Effect_T = Get_Test_t();
+  uint32_t t0 = DWT->CYCCNT;   /* 中断处理开始计时 */
+
   if (AUDIO_Buffer_Read(USBaudio_buffer,Audio_Buffer_Size) != 0)
   {
     for (uint8_t i = 0; i < Audio_Buffer_Size / 2; i++)
     {
-      txaudio_buffer[i] =0;
-      //read_error_count++;
+      txaudio_buffer[i] = 0;
     }
   }
   else
   {
-    uint16_t R, L;
-    for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)
+    for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
     {
-      L = USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8);
-      R = USBaudio_buffer[4 * i + 2] | (USBaudio_buffer[4 * i + 3] << 8);
-
-      audio_process_buffer[i] = (float)((int32_t)(int16_t)L << 8) * (1.0f / 8388607.0f);
-      // txaudio_buffer[2 * i] = (int32_t)(int16_t)L << 8;
-      // txaudio_buffer[2 * i + 1] = (int32_t)(int16_t)R << 8;
+      int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
+      audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
     }
-    float audio_out_buffer[Audio_Buffer_Size / 4];
-    Test_Effect_T->Init();
-    Test_Effect_T->Process(audio_process_buffer,audio_out_buffer,Audio_Buffer_Size/4);
+
+    effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
+
     for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)
     {
-      txaudio_buffer[2 * i] = (int32_t)(audio_out_buffer[i] / (1.0f / 8388607.0f));
-      txaudio_buffer[2 * i + 1] = (int32_t)(audio_out_buffer[i] / (1.0f / 8388607.0f));
+      int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
+      txaudio_buffer[2 * i]     = v;
+      txaudio_buffer[2 * i + 1] = v;
     }
   }
-  SCB_CleanDCache_by_Addr(txaudio_buffer,sizeof(txaudio_buffer)/2);
+  SCB_CleanDCache_by_Addr(txaudio_buffer, sizeof(txaudio_buffer) / 2);
+
+  g_audio_cycles += DWT->CYCCNT - t0;
+  g_audio_blocks++;
 }
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  Test_Effect_T = Get_Test_t();
+  uint32_t t0 = DWT->CYCCNT;
+
   if (AUDIO_Buffer_Read(USBaudio_buffer, Audio_Buffer_Size) != 0)
   {
     for (uint16_t i = Audio_Buffer_Size / 2; i < Audio_Buffer_Size; i++)
@@ -339,26 +366,25 @@ void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
   }
   else
   {
-    uint16_t R, L;
-    for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)
+    for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
     {
-      L = USBaudio_buffer[4 * i]     | (USBaudio_buffer[4 * i + 1] << 8);
-      R = USBaudio_buffer[4 * i + 2] | (USBaudio_buffer[4 * i + 3] << 8);
-
-      audio_process_buffer[i] = (float)((int32_t)(int16_t)L << 8) * (1.0f / 8388607.0f);
+      int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
+      audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
     }
 
-    float audio_out_buffer[Audio_Buffer_Size / 4];
-    Test_Effect_T->Init();
-    Test_Effect_T->Process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
+    effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
 
     for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)
     {
-      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i]     = (int32_t)(audio_out_buffer[i] / (1.0f / 8388607.0f));
-      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i + 1] = (int32_t)(audio_out_buffer[i] / (1.0f / 8388607.0f));
+      int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
+      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i]     = v;
+      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i + 1] = v;
     }
   }
   SCB_CleanDCache_by_Addr((uint32_t *)&txaudio_buffer[Audio_Buffer_Size / 2], sizeof(txaudio_buffer) / 2);
+
+  g_audio_cycles += DWT->CYCCNT - t0;
+  g_audio_blocks++;
 }
 
 

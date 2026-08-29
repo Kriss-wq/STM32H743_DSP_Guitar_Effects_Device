@@ -66,7 +66,8 @@ void MX_FREERTOS_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define FPSCR_FZ_Msk  (1UL << 24)
+#define FPSCR_DN_Msk  (1UL << 25)
 /* USER CODE END 0 */
 
 /**
@@ -77,6 +78,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+
 
   /* USER CODE END 1 */
 
@@ -124,6 +126,9 @@ int main(void)
   MX_I2S3_Init();
   /* USER CODE BEGIN 2 */
 
+  __set_FPSCR(__get_FPSCR() | FPSCR_FZ_Msk | FPSCR_DN_Msk);
+  volatile uint32_t* FPDSCR = (volatile uint32_t*)(0xE000EF3C);
+  *FPDSCR |= (1U << 24) | (1U << 25);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -268,7 +273,7 @@ void MPU_Config(void)
   MPU_InitStruct.Number = MPU_REGION_NUMBER1;
   MPU_InitStruct.BaseAddress = 0xC0000000;
   MPU_InitStruct.Size = MPU_REGION_SIZE_8MB;
-  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL0;
+  MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */

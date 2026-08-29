@@ -20,7 +20,7 @@ void ui_event_Button9(lv_event_t* e)
     {
 
         uint8_t Button_Num = ui_get_Button_Num();
-        effect_all_t* effect_buffer = effect_buffer_get();
+        effect_process_t* effect_buffer = effect_buffer_get();
         uint8_t roller_num= lv_roller_get_selected(ui_Roller1);
         effect_t** effect_all_buffer = effect_get();
 
@@ -30,6 +30,9 @@ void ui_event_Button9(lv_event_t* e)
         }
 
         effect_buffer->Effect[Button_Num] = *effect_all_buffer[roller_num];
+        effect_buffer->Effect[Button_Num].enable = 1;   /* 选中即开启 */
+        effect_buffer->Effect[Button_Num].Init(&effect_buffer->Effect[Button_Num]);
+
         lv_label_set_text(Label[Button_Num], effect_buffer->Effect[Button_Num].name);
         _ui_screen_change(&ui_Screen1, LV_SCR_LOAD_ANIM_NONE, 0, 0, &ui_Screen1_screen_init);
     }
