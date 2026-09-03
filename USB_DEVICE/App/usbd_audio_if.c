@@ -26,44 +26,76 @@
 #include "cmsis_os.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "core_cm7.h"
 
-__attribute__((section(".ram"))) volatile static uint8_t audio_ring[USB_AUDIO_BUFFER_SIZE];
+__attribute__((aligned(32))) __attribute__((section(".ram")))
+volatile static uint8_t audio_ring[USB_AUDIO_BUFFER_SIZE];
 volatile static uint16_t write_index;
 volatile static uint16_t read_index;
+volatile static uint32_t write_error_count;
+volatile static uint32_t read_error_count;
+
+/* audio_ring is only ever touched by the CPU (USB OTG FS runs with
+ * dma_enable = DISABLE, I2S side copies with the CPU), so no D-Cache
+ * maintenance is needed here. Only the read/write indices need atomicity. */
 
 uint8_t AUDIO_Buffer_Write(uint8_t *data,uint16_t size)
 {
+  uint32_t primask = __get_PRIMASK();
+  __disable_irq();
 
   uint16_t free = (read_index - write_index - 1u) & (USB_AUDIO_BUFFER_SIZE - 1u);
   if (size > free)
+  {
+    write_error_count++;
+    if (!primask) { __enable_irq(); }
     return 1;
+  }
 
+  uint16_t wi = write_index;
   for (uint16_t i = 0; i < size; i++)
   {
-    audio_ring[write_index] = data[i];
-    write_index++;
-    write_index &= USB_AUDIO_BUFFER_SIZE - 1u;
+    audio_ring[wi] = data[i];
+    wi = (uint16_t)((wi + 1u) & (USB_AUDIO_BUFFER_SIZE - 1u));
   }
+  write_index = wi;
+
+  if (!primask) { __enable_irq(); }
   return 0;
 }
 
 uint8_t AUDIO_Buffer_Read(uint8_t *data,uint16_t size)
 {
-  uint16_t free = (write_index - read_index) & (USB_AUDIO_BUFFER_SIZE - 1u);
-  if (size > free)
-    return 1;
+  uint32_t primask = __get_PRIMASK();
+  __disable_irq();
 
+  uint16_t avail = (write_index - read_index) & (USB_AUDIO_BUFFER_SIZE - 1u);
+  if (size > avail)
+  {
+    read_error_count++;
+    if (!primask) { __enable_irq(); }
+    return 1;
+  }
+
+  uint16_t ri = read_index;
   for (uint16_t i = 0; i < size; i++)
   {
-    data[i] = audio_ring[read_index];
-    read_index = (read_index + 1u) & (USB_AUDIO_BUFFER_SIZE - 1u);
+    data[i] = audio_ring[ri];
+    ri = (uint16_t)((ri + 1u) & (USB_AUDIO_BUFFER_SIZE - 1u));
   }
+  read_index = ri;
+
+  if (!primask) { __enable_irq(); }
   return 0;
 }
 
 uint16_t AUDIO_Buffer_GetFill(void)
 {
-  return (uint16_t)((write_index - read_index) & (USB_AUDIO_BUFFER_SIZE - 1u));
+  uint32_t primask = __get_PRIMASK();
+  __disable_irq();
+  uint16_t fill = (uint16_t)((write_index - read_index) & (USB_AUDIO_BUFFER_SIZE - 1u));
+  if (!primask) { __enable_irq(); }
+  return fill;
 }
 
 /* USER CODE END INCLUDE */
@@ -131,8 +163,6 @@ uint16_t AUDIO_Buffer_GetFill(void)
   */
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-volatile uint32_t write_error_count;
-volatile uint32_t read_error_count;
 volatile uint32_t write_index2;
 
 uint32_t Get_write_error_count(void)
@@ -298,24 +328,8 @@ static int8_t AUDIO_MuteCtl_FS(uint8_t cmd)
 static int8_t AUDIO_PeriodicTC_FS(uint8_t *pbuf, uint32_t size, uint8_t cmd)
 {
   /* USER CODE BEGIN 5 */
-  UNUSED(pbuf);
-  UNUSED(size);
   UNUSED(cmd);
-  __disable_irq();
-  // if (write_index2!=write_error_count)
-  // {
-  //   time+=100;
-  //   __HAL_RCC_PLL3FRACN_DISABLE();          /* 1. 清 PLL3FRACEN，锁存关闭 */
-  //   __HAL_RCC_PLL3FRACN_CONFIG(time);  /* 2. 写 RCC->PLL3FRACR */
-  //   __HAL_RCC_PLL3FRACN_ENABLE();           /* 3. 置 PLL3FRACEN，新值生效 */
-  // }
-  if (AUDIO_Buffer_Write(pbuf,(uint16_t)size)!=0)
-  {
-    //write_error_count++;
-  }
-  //write_index2 = write_error_count;
-  __enable_irq();
-
+  (void)AUDIO_Buffer_Write(pbuf, (uint16_t)size);
   return (USBD_OK);
   /* USER CODE END 5 */
 }

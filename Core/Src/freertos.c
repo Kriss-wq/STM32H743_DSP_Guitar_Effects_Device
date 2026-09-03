@@ -48,6 +48,8 @@
 #include "usbd_audio_if.h"
 #include "usb_device.h"
 #include "Test.h"
+#include "cpptest.h"
+#include "cpptest.h"
 //#include "gui_guider.h"
 //#include "events_init.h"
 /* USER CODE END Includes */
@@ -74,13 +76,12 @@ typedef StaticTask_t osStaticThreadDef_t;
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-/* 由 TIM3 输入捕获中断更新，任务里通过 TIM3_CaptureGet() 读取。 */
-static volatile TIM3_CaptureResult_t s_tim3_capture;
+
 
 /* USER CODE END Variables */
 /* Definitions for DisplayTask */
 osThreadId_t DisplayTaskHandle;
-uint32_t DisplayTaskBuffer[ 4096 ];
+uint32_t DisplayTaskBuffer[ 8192 ];
 osStaticThreadDef_t DisplayTaskControlBlock;
 const osThreadAttr_t DisplayTask_attributes = {
   .name = "DisplayTask",
@@ -130,7 +131,7 @@ void vApplicationIdleHook( void )
    important that vApplicationIdleHook() is permitted to return to its calling
    function, because it is the responsibility of the idle task to clean up
    memory allocated by the kernel to any task that has since been deleted. */
-    //__WFI();
+
   __HAL_RCC_USB_OTG_FS_ULPI_CLK_SLEEP_DISABLE();
   __HAL_RCC_USB_OTG_FS_CLK_SLEEP_ENABLE();
   __WFI();  // 进入休眠
@@ -250,7 +251,6 @@ void DisplayTaskEntry(void *argument)
     {
         Touch_Scan();
         lv_task_handler();
-
         /* 每秒结算一次音频中断的 CPU 占用率 */
         uint32_t now_tick = xTaskGetTickCount();
         uint32_t ms = (uint32_t)(now_tick - last_cpu_tick);

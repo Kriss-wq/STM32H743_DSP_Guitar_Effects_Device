@@ -1,5 +1,6 @@
 #include "stdint.h"
 #include "Test.h"
+#include "db.h"
 //测试范例为TS808
 static void Test_Effect_Init(effect_t* effect);
 static void Test_Effect_Setup(effect_t* effect,uint8_t Gain,uint8_t Tone,uint8_t Level);
@@ -57,6 +58,7 @@ static void Test_Effect_Process(effect_t* effect,float *in, float *out, uint16_t
 
         out[i] = clipped * level;
     }
+    db_reduce(out, out, size, DB_15);
 }
 
 effect_t* Get_Test_t(void)

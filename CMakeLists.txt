@@ -72,7 +72,7 @@ project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
-enable_language(C ASM)
+enable_language(C CXX ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
@@ -122,6 +122,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 )
 #add_subdirectory(APP/Mylvgl)
+# NAM 必须在 Effect 之前：effect 通过 target_link_libraries 依赖 NAM
+
 add_subdirectory(APP/Effect)
 add_subdirectory(lvgl_main)
 
@@ -137,8 +139,9 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 target_link_libraries(${CMAKE_PROJECT_NAME}
     ui
     stm32cubemx
-        effect
-        ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM7lfdp_math.a
+    effect
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM7lfdp_math.a
     -lm
     # Add user defined libraries
 )

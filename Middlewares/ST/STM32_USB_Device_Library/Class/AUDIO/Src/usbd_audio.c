@@ -351,10 +351,17 @@ __ALIGN_BEGIN static uint8_t USBD_AUDIO_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIE
 static uint8_t AUDIOOutEpAdd = AUDIO_OUT_EP;
 
 static uint8_t audio_fb_data[AUDIO_FEEDBACK_PACKET] = {0x00U, 0x00U, 0x0CU};
-static volatile uint8_t audio_fb_tx_busy = 0U;
-static uint8_t audio_fb_primed = 0U;
-static uint8_t audio_fb_div = 0U;
+static volatile uint8_t audio_fb_tx_busy = 0;
+static uint8_t audio_fb_primed = 0;
+static int32_t audio_fb_fill_avg = 0;
 volatile uint32_t audio_fb_hz_dbg = 48000U;
+volatile uint16_t audio_fb_fill_dbg = 0U;
+
+#define AUDIO_FB_NOMINAL     786432L
+#define AUDIO_FB_RANGE       16384L              /* clamp ±1000 Hz */
+#define AUDIO_FB_TARGET      2048L
+#define AUDIO_FB_KP          4L                  /* units per byte of fill error */
+#define AUDIO_FB_AVG_SHIFT   4
 /**
   * @}
   */
@@ -565,7 +572,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev,
               (void)USBD_LL_FlushEP(pdev, AUDIO_FEEDBACK_EP);
               audio_fb_tx_busy = 0U;
               audio_fb_primed = 0U;
-              audio_fb_div = 0U;
+              audio_fb_fill_avg = 0;
               audio_fb_data[0] = 0x00U;
               audio_fb_data[1] = 0x00U;
               audio_fb_data[2] = 0x0CU;
@@ -701,58 +708,47 @@ static uint8_t USBD_AUDIO_SOF(USBD_HandleTypeDef *pdev)
   if (haudio->alt_setting != 0U)
   {
     fill = AUDIO_Buffer_GetFill();
-    audiohz = (uint32_t)audio_fb_data[0]
-            | ((uint32_t)audio_fb_data[1] << 8)
-            | ((uint32_t)audio_fb_data[2] << 16);
+    audio_fb_fill_dbg = fill;
 
     if (audio_fb_primed == 0U)
     {
-      if (fill >= 2048U)
+      /* Wait until ring is ~half full before I2S starts consuming */
+      if (fill >= (uint16_t)AUDIO_FB_TARGET)
       {
         audio_fb_primed = 1U;
+        audio_fb_fill_avg = (int32_t)fill << AUDIO_FB_AVG_SHIFT;
       }
-      audiohz = 786432U;
-      audio_fb_data[0] = 0x00U;
-      audio_fb_data[1] = 0x00U;
-      audio_fb_data[2] = 0x0CU;
+      audiohz = (uint32_t)AUDIO_FB_NOMINAL;
     }
     else
     {
-      audio_fb_div++;
-      if (audio_fb_div >= 8U)
-      {
-        audio_fb_div = 0U;
+      int32_t err;
+      int32_t hz;
 
-        if (fill > 2560U)
-        {
-          if (audiohz > (783156U + 16U))
-          {
-            audiohz -= 16U;
-          }
-          else
-          {
-            audiohz = 783156U;
-          }
-          audio_fb_data[0] = (uint8_t)(audiohz & 0xFFU);
-          audio_fb_data[1] = (uint8_t)((audiohz >> 8) & 0xFFU);
-          audio_fb_data[2] = (uint8_t)((audiohz >> 16) & 0xFFU);
-        }
-        else if (fill < 1536U)
-        {
-          if (audiohz < (789708U - 16U))
-          {
-            audiohz += 16U;
-          }
-          else
-          {
-            audiohz = 789708U;
-          }
-          audio_fb_data[0] = (uint8_t)(audiohz & 0xFFU);
-          audio_fb_data[1] = (uint8_t)((audiohz >> 8) & 0xFFU);
-          audio_fb_data[2] = (uint8_t)((audiohz >> 16) & 0xFFU);
-        }
+      /* Low-pass the fill: per-SOF fill jitters by ~1 USB packet / I2S block */
+      audio_fb_fill_avg += (((int32_t)fill << AUDIO_FB_AVG_SHIFT) - audio_fb_fill_avg)
+                           >> AUDIO_FB_AVG_SHIFT;
+
+      /* fill above target => host is faster than I2S => ask for FEWER samples.
+       * Pure P only: fill is already an integral of rate error, so an extra
+       * I term walks to the clamp over seconds and the stream falls apart. */
+      err = (audio_fb_fill_avg >> AUDIO_FB_AVG_SHIFT) - AUDIO_FB_TARGET;
+      hz  = AUDIO_FB_NOMINAL - err * AUDIO_FB_KP;
+
+      if (hz < (AUDIO_FB_NOMINAL - AUDIO_FB_RANGE))
+      {
+        hz = AUDIO_FB_NOMINAL - AUDIO_FB_RANGE;
       }
+      else if (hz > (AUDIO_FB_NOMINAL + AUDIO_FB_RANGE))
+      {
+        hz = AUDIO_FB_NOMINAL + AUDIO_FB_RANGE;
+      }
+      audiohz = (uint32_t)hz;
     }
+
+    audio_fb_data[0] = (uint8_t)(audiohz & 0xFFU);
+    audio_fb_data[1] = (uint8_t)((audiohz >> 8) & 0xFFU);
+    audio_fb_data[2] = (uint8_t)((audiohz >> 16) & 0xFFU);
 
     audio_fb_hz_dbg = (audiohz * 1000UL) >> 14;
 
@@ -1086,6 +1082,14 @@ static void *USBD_AUDIO_GetAudioHeaderDesc(uint8_t *pConfDesc)
     }
   }
   return pAudioDesc;
+}
+
+/**
+  * @brief  Returns 1 when USB ring buffer is primed and I2S may consume audio.
+  */
+uint8_t USBD_AUDIO_StreamReady(void)
+{
+  return audio_fb_primed;
 }
 
 /**

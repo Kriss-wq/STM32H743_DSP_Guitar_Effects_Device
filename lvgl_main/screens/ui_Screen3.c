@@ -28,7 +28,10 @@ void ui_event_Arc(lv_event_t * e)
             if(event_code == LV_EVENT_VALUE_CHANGED)
             {
                 uint8_t Value = (uint8_t)lv_arc_get_value(Arc[i]);
-                effect_buffer->Effect[ui_get_Button_Num()].param[i] = Value;
+                effect_t *fx = &effect_buffer->Effect[ui_get_Button_Num()];
+                fx->param[i] = Value;
+                if (fx->Setup != NULL)
+                    fx->Setup(fx, fx->param[0], fx->param[1], fx->param[2]);
             }
         }
     }

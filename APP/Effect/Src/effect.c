@@ -7,7 +7,9 @@
 
 #include "Test.h"
 #include "Vintage30.h"
-
+#include "TS808.h"
+#include "cpptest.h"
+#include "Namtest.h"
 #define EFFECT_CHAIN_LEN   8
 #define EFFECT_MAX_BLOCK   64
 
@@ -24,6 +26,8 @@ void effect_init(void)
 {
     All_Effect[0] = Get_Test_t();
     All_Effect[1] = Get_Vintage30_t();
+    All_Effect[2] = Get_TS808_t();
+    All_Effect[3] = Get_NAMTest_t();
 }
 
 /* 清空一个槽位:整块清零后 Process==NULL,链遍历时会自动跳过 */
@@ -63,7 +67,6 @@ void effect_process(float *in, float *out, uint16_t size)
     }
     else if (cur != out)
     {
-
         memcpy(out, cur, (size_t)size * sizeof(float));
     }
 }
