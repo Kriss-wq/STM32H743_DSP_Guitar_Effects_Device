@@ -34,7 +34,6 @@ static uint8_t nam_loaded;
 int rc;
 static void NAMTest_Effect_Init(effect_t* effect)
 {
-    (void)effect;
     nam_loaded = 0u;
     nam_init(&nam_state);
 
@@ -58,21 +57,14 @@ static void NAMTest_Effect_Setup(effect_t* effect,uint8_t Gain,uint8_t Tone,uint
     effect->param[2] = Level;
 }
 
-static void NAMTest_Effect_Process(effect_t* effect,float *in, float *out, uint16_t size)
+static void NAMTest_Effect_Process(effect_t* effect, float* in, float* out, uint16_t size)
 {
-    (void)effect;
-    if (!nam_loaded || in == NULL || out == NULL || size == 0u)
-    {
-        if (in != NULL && out != NULL && in != out)
-        {
-            for (uint16_t i = 0; i < size; i++)
-                out[i] = in[i];
-        }
-        return;
-    }
+    for (uint16_t i = 0; i < size; i++)
+        out[i] = in[i];
+
 
     nam_process(&nam_state, &in, &out, (int)size);
-    //db_reduce(out, out, size, DB_15);
+    db_reduce(out, out, size, DB_10);
 }
 
 effect_t* Get_NAMTest_t(void)

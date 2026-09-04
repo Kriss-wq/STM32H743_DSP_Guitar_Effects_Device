@@ -16,7 +16,7 @@
 
 /* AXI SRAM (linker .ram → 0x24000000) for ring buffers */
 #ifndef NAM_SRAM
-#define NAM_SRAM __attribute__((section(".ram"))) __attribute__((aligned(32)))
+#define NAM_SRAM __attribute__((section(".d2"))) __attribute__((aligned(32)))
 #endif
 
 #define NAM_IN_CHANNELS 1
