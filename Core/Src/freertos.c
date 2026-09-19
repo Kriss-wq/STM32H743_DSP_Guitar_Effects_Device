@@ -47,9 +47,6 @@
 #include "semphr.h"
 #include "usbd_audio_if.h"
 #include "usb_device.h"
-#include "Test.h"
-#include "cpptest.h"
-#include "cpptest.h"
 //#include "gui_guider.h"
 //#include "events_init.h"
 /* USER CODE END Includes */
@@ -230,7 +227,7 @@ void MX_FREERTOS_Init(void) {
 /* USER CODE END Header_DisplayTaskEntry */
 void DisplayTaskEntry(void *argument)
 {
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
   /* USER CODE BEGIN DisplayTaskEntry */
     Touch_Init();
     lv_init();
@@ -294,7 +291,7 @@ void DatacollecTaskEntry(void *argument)
 
     osDelay(1000);
     HAL_I2S_Transmit_DMA(&hi2s2,txaudio_buffer,Audio_Buffer_Size);
-    //HAL_I2S_Receive_DMA(&hi2s3,rxaudio_buffer,Audio_Buffer_Size);
+    HAL_I2S_Receive_DMA(&hi2s3,rxaudio_buffer,Audio_Buffer_Size);
     for (;;)
     {
       //AUDIO_Buffer_Read(USBaudio_buffer,USB_AUDIO_BUFFER_SIZE);
@@ -303,13 +300,72 @@ void DatacollecTaskEntry(void *argument)
       // TickType_t xLastWakeTime = xTaskGetTickCount();
       // vTaskDelayUntil(&xLastWakeTime, 1);
       ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+      const uint16_t frames = (uint16_t)(Audio_Buffer_Size / 4);
+
       if (I2S_RX_State == 1)
       {
-        memcpy(txaudio_buffer,rxaudio_buffer,sizeof(int32_t)*Audio_Buffer_Size/2);
+        uint32_t t0 = DWT->CYCCNT;
+
+        for (uint16_t i = 0; i < frames; i++)
+        {
+          int32_t s = rxaudio_buffer[2 * i];
+          /* 符号扩展 24bit → 32bit，再归一化到 [-1, 1] */
+          if (s & 0x800000)
+            s |= ~0xFFFFFF;
+          else
+            s &= 0xFFFFFF;
+          audio_process_buffer[i] = (float)s * (1.0f / 8388607.0f);
+        }
+
+        effect_process(audio_process_buffer, audio_out_buffer, frames);
+
+        for (uint16_t i = 0; i < frames; i++)
+        {
+          float x = audio_out_buffer[i];
+          if (x > 1.0f) x = 1.0f;
+          if (x < -1.0f) x = -1.0f;
+          int32_t v = (int32_t)(x * 8388607.0f) & 0xFFFFFF;
+          txaudio_buffer[2 * i]     = v;
+          txaudio_buffer[2 * i + 1] = v;
+        }
+
+        SCB_CleanDCache_by_Addr(txaudio_buffer, sizeof(txaudio_buffer) / 2);
+
+        g_audio_cycles += DWT->CYCCNT - t0;
+        g_audio_blocks++;
       }
       else if (I2S_RX_State == 2)
       {
-        memcpy(txaudio_buffer + Audio_Buffer_Size / 2,rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(int32_t)*Audio_Buffer_Size/2);
+        uint32_t t0 = DWT->CYCCNT;
+        const uint16_t base = (uint16_t)(Audio_Buffer_Size / 2);
+
+        for (uint16_t i = 0; i < frames; i++)
+        {
+          int32_t s = rxaudio_buffer[base + 2 * i];
+          if (s & 0x800000)
+            s |= ~0xFFFFFF;
+          else
+            s &= 0xFFFFFF;
+          audio_process_buffer[i] = (float)s * (1.0f / 8388607.0f);
+        }
+
+        effect_process(audio_process_buffer, audio_out_buffer, frames);
+
+        for (uint16_t i = 0; i < frames; i++)
+        {
+          float x = audio_out_buffer[i];
+          if (x > 1.0f) x = 1.0f;
+          if (x < -1.0f) x = -1.0f;
+          int32_t v = (int32_t)(x * 8388607.0f) & 0xFFFFFF;
+          txaudio_buffer[base + 2 * i]     = v;
+          txaudio_buffer[base + 2 * i + 1] = v;
+        }
+
+        SCB_CleanDCache_by_Addr((uint32_t *)&txaudio_buffer[base], sizeof(txaudio_buffer) / 2);
+
+        g_audio_cycles += DWT->CYCCNT - t0;
+        g_audio_blocks++;
       }
     }
   /* USER CODE END DatacollecTaskEntry */
@@ -321,70 +377,72 @@ effect_t* Test_Effect_T;
 
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  uint32_t t0 = DWT->CYCCNT;   /* 中断处理开始计时 */
+  // uint32_t t0 = DWT->CYCCNT;   /* 中断处理开始计时 */
+  //
+  // if (AUDIO_Buffer_Read(USBaudio_buffer,Audio_Buffer_Size) != 0)
+  // {
+  //   for (uint8_t i = 0; i < Audio_Buffer_Size / 2; i++)
+  //   {
+  //     txaudio_buffer[i] = 0;
+  //   }
+  // }
+  // else
+  // {
+  //   for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
+  //   {
+  //     int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
+  //     audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
+  //   }
+  //
+  //   effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
+  //
+  //   for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)
+  //   {
+  //     int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
+  //     txaudio_buffer[2 * i]     = v;
+  //     txaudio_buffer[2 * i + 1] = v;
+  //   }
+  // }
+  // SCB_CleanDCache_by_Addr(txaudio_buffer, sizeof(txaudio_buffer) / 2);
+  //
+  // g_audio_cycles += DWT->CYCCNT - t0;
+  // g_audio_blocks++;
 
-  if (AUDIO_Buffer_Read(USBaudio_buffer,Audio_Buffer_Size) != 0)
-  {
-    for (uint8_t i = 0; i < Audio_Buffer_Size / 2; i++)
-    {
-      txaudio_buffer[i] = 0;
-    }
-  }
-  else
-  {
-    for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
-    {
-      int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
-      audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
-    }
 
-    effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
-
-    for (uint8_t i = 0; i < Audio_Buffer_Size / 4; i++)
-    {
-      int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
-      txaudio_buffer[2 * i]     = v;
-      txaudio_buffer[2 * i + 1] = v;
-    }
-  }
-  SCB_CleanDCache_by_Addr(txaudio_buffer, sizeof(txaudio_buffer) / 2);
-
-  g_audio_cycles += DWT->CYCCNT - t0;
-  g_audio_blocks++;
 }
 
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
-  uint32_t t0 = DWT->CYCCNT;
-
-  if (AUDIO_Buffer_Read(USBaudio_buffer, Audio_Buffer_Size) != 0)
-  {
-    for (uint16_t i = Audio_Buffer_Size / 2; i < Audio_Buffer_Size; i++)
-    {
-      txaudio_buffer[i] = 0;
-    }
-  }
-  else
-  {
-    for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
-    {
-      int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
-      audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
-    }
-
-    effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
-
-    for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)
-    {
-      int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
-      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i]     = v;
-      txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i + 1] = v;
-    }
-  }
-  SCB_CleanDCache_by_Addr((uint32_t *)&txaudio_buffer[Audio_Buffer_Size / 2], sizeof(txaudio_buffer) / 2);
-
-  g_audio_cycles += DWT->CYCCNT - t0;
-  g_audio_blocks++;
+  // uint32_t t0 = DWT->CYCCNT;
+  //
+  // if (AUDIO_Buffer_Read(USBaudio_buffer, Audio_Buffer_Size) != 0)
+  // {
+  //   for (uint16_t i = Audio_Buffer_Size / 2; i < Audio_Buffer_Size; i++)
+  //   {
+  //     txaudio_buffer[i] = 0;
+  //   }
+  // }
+  // else
+  // {
+  //   for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)   /* 16 帧 */
+  //   {
+  //     int16_t L = (int16_t)(USBaudio_buffer[4 * i] | (USBaudio_buffer[4 * i + 1] << 8));
+  //     audio_process_buffer[i] = (float)((int32_t)L << 8) * (1.0f / 8388607.0f);
+  //   }
+  //
+  //   effect_process(audio_process_buffer, audio_out_buffer, Audio_Buffer_Size / 4);
+  //
+  //   for (uint16_t i = 0; i < Audio_Buffer_Size / 4; i++)
+  //   {
+  //     int32_t v = (int32_t)(audio_out_buffer[i] * 8388607.0f);
+  //     txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i]     = v;
+  //     txaudio_buffer[Audio_Buffer_Size / 2 + 2 * i + 1] = v;
+  //   }
+  // }
+  // SCB_CleanDCache_by_Addr((uint32_t *)&txaudio_buffer[Audio_Buffer_Size / 2], sizeof(txaudio_buffer) / 2);
+  //
+  // g_audio_cycles += DWT->CYCCNT - t0;
+  // g_audio_blocks++;
 }
 
 
@@ -392,19 +450,22 @@ void HAL_I2S_RxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 {
   I2S_RX_State = 1;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+  SCB_InvalidateDCache_by_Addr(rxaudio_buffer,sizeof(rxaudio_buffer) / 2);
+
+
   vTaskNotifyGiveFromISR(DatacollecTaskHandle, &xHigherPriorityTaskWoken);
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-  SCB_InvalidateDCache_by_Addr(rxaudio_buffer,sizeof(txaudio_buffer) / 2);
 }
 void HAL_I2S_RxCpltCallback(I2S_HandleTypeDef *hi2s)
 {
   I2S_RX_State = 2;
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+  SCB_InvalidateDCache_by_Addr(rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(rxaudio_buffer) / 2);
+
   vTaskNotifyGiveFromISR(DatacollecTaskHandle, &xHigherPriorityTaskWoken);
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-  SCB_InvalidateDCache_by_Addr(rxaudio_buffer + Audio_Buffer_Size / 2,sizeof(txaudio_buffer) / 2);
 }
 // static void QSPI_Flash_SelfTest(void)
 // {

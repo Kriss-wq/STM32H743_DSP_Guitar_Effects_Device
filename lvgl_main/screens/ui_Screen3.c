@@ -4,7 +4,7 @@
 // Project name: SquareLine_Project
 
 #include "../ui.h"
-#include "../../APP/Effect/Inc/effect.h"
+#include "../../Effect/Inc/effect.h"
 lv_obj_t * ui_Screen3 = NULL;
 lv_obj_t * ui_Arc2 = NULL;
 lv_obj_t * ui_Arc3 = NULL;

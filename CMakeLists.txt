@@ -46,8 +46,6 @@ set(LVGL_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/lvgl)
 file(GLOB_RECURSE SOURCES ${LVGL_ROOT_DIR}/src/*.c)
 file(GLOB_RECURSE EXAMPLE_SOURCES ${LVGL_ROOT_DIR}/examples/*.c)
 file(GLOB_RECURSE DEMO_SOURCES ${LVGL_ROOT_DIR}/demos/*.c)
-# LV_DEMO_MUSIC_LARGE=0 时不需要 large 资源；这些文件极大，-O3 并行编译容易 OOM
-list(FILTER DEMO_SOURCES EXCLUDE REGEX ".*/demos/music/assets/.*_large\\.c$")
 
 file(GLOB_RECURSE GENERATED_SOURCES ${LVGL_ROOT_DIR}/generated/*.c)
 file(GLOB_RECURSE SDK_SOURCES ${LVGL_ROOT_DIR}/sdk/*.c)
@@ -76,10 +74,7 @@ enable_language(C CXX ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
-        BSP/Src/LED.c
-        BSP/Inc/LED.h
-        BSP/Src/DAC_I2S.c
-        BSP/Inc/DAC_I2S.h
+
 )
 
 # Add STM32CubeMX generated sources
@@ -121,10 +116,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         BSP/Inc
 
 )
-#add_subdirectory(APP/Mylvgl)
-# NAM 必须在 Effect 之前：effect 通过 target_link_libraries 依赖 NAM
 
-add_subdirectory(APP/Effect)
+add_subdirectory(Effect)
 add_subdirectory(lvgl_main)
 
 # Add project symbols (macros)
@@ -140,7 +133,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     ui
     stm32cubemx
     effect
-
     ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/CMSIS/DSP/Lib/GCC/libarm_cortexM7lfdp_math.a
     -lm
     # Add user defined libraries

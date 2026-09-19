@@ -6,7 +6,7 @@
 
 #include "stdint.h"
 #include "../ui.h"
-#include "../../APP/Effect/Inc/effect.h"
+#include "../../Effect/Inc/effect.h"
 lv_obj_t* ui_Screen2 = NULL;
 lv_obj_t* ui_Roller1 = NULL;
 lv_obj_t* ui_Button9 = NULL;

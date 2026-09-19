@@ -11,18 +11,17 @@
 #include "cpptest.h"
 #include "Namtest.h"
 #include "Delay.h"
+#include "Volume.h"
+
 #define EFFECT_CHAIN_LEN   8
 #define EFFECT_MAX_BLOCK   64
 
 effect_t* All_Effect[EFFECT_SIZE];
 effect_process_t Effect_Buffer;
 
-/* 链式中间缓冲:两块乒乓。CPU 只在 in/out 与这两块之间倒手,任何一级都不原地覆盖输入 */
 __attribute__((aligned(32)))__attribute__((section(".ram")))
 static float effect_scratch[2][EFFECT_MAX_BLOCK];
-/*
- 如果要添加新效果器，直接在这里Get对应效果器的结构体就可以了，不需要其他操作
- */
+
 void effect_init(void)
 {
     All_Effect[0] = Get_Test_t();
@@ -30,9 +29,10 @@ void effect_init(void)
     All_Effect[2] = Get_TS808_t();
     All_Effect[3] = Get_NAMTest_t();
     All_Effect[4] = Get_Delay_t();
+    All_Effect[5] = Get_Volume_t();
 }
 
-/* 清空一个槽位:整块清零后 Process==NULL,链遍历时会自动跳过 */
+
 void effect_slot_clear(uint8_t slot)
 {
     if (slot < EFFECT_CHAIN_LEN)

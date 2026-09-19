@@ -49,7 +49,7 @@ void nam_reset(nam_state_t* state);
 /* Process num_frames of audio */
 /* input: float[NAM_IN_CHANNELS][num_frames] */
 /* output: float[NAM_OUT_CHANNELS][num_frames] */
-void nam_process(nam_state_t* state, const float* const* input, float* const* output, int num_frames);
+__attribute__((section(".itcm")))void nam_process(nam_state_t* state, const float* const* input, float* const* output, int num_frames);
 
 /* Compile with -DNAM_PROFILE_ACTIVATIONS to track peak activation values. */
 /* After processing, call nam_get_act_peak() for the recommended act_scale. */

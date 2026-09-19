@@ -64,7 +64,7 @@ static void NAMTest_Effect_Process(effect_t* effect, float* in, float* out, uint
 
 
     nam_process(&nam_state, &in, &out, (int)size);
-    db_reduce(out, out, size, DB_10);
+    //db_reduce(out, out, size, DB_10);
 }
 
 effect_t* Get_NAMTest_t(void)
